@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Mixup.gg',
+  title: 'Mixup.gg | Coming Soon',
   description: 'Mixup.gg'
 };
 
