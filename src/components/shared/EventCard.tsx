@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 import { titleCase } from '@/helpers/titleCase';
 
-export default function EventCard({ event }) {
+export default function EventCard({ event }: any) {
   return (
     <div
       className={'h-full overflow-hidden border border-gray-200 py-0 shadow-sm'}
