@@ -1,30 +1,17 @@
-import { faker } from '@faker-js/faker';
-
-import Hero from '@/components/Hero';
-import HomeEventList from '@/components/HomeEventList';
+import XLogo from '@/assets/svg/XLogo';
 
 export default async function Home() {
-  faker.seed(123);
-
-  // create array of 100 random names
-  const events = Array.from({ length: 10 }, () => {
-    return {
-      id: faker.string.uuid(),
-      name: faker.lorem.words({
-        min: 1,
-        max: 5
-      }),
-      image: faker.image.url()
-    };
-  });
-
   return (
-    <main className={'space-y-8'}>
-      <Hero />
-      <div className={'px-4'}>
-        <div className={'mx-auto max-w-[1600px]'}>
-          <HomeEventList events={events} />
-        </div>
+    <main className={'flex h-full items-center justify-center'}>
+      <div className='flex flex-col items-center justify-center'>
+        <XLogo
+          stroke
+          arrowColor={'black'}
+          size={24}
+          className='mb-4'
+        />
+        <h1 className='text-3xl font-semibold'>Mixup.gg</h1>
+        <p className={'text-sm text-gray-600 uppercase'}>Coming Soon..ish</p>
       </div>
     </main>
   );
