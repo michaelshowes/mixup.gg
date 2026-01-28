@@ -1,13 +1,9 @@
-import { defineSchema, defineTable } from 'convex/server';
-import { v } from 'convex/values';
+import { defineSchema } from 'convex/server';
 
-// The schema is entirely optional.
-// You can delete this file (schema.ts) and the
-// app will continue to work.
-// The schema provides more precise TypeScript types.
+import { tournaments } from './schema/tournamentsSchema';
+import { users } from './schema/usersSchema';
+
 export default defineSchema({
-  users: defineTable({
-    name: v.string(),
-    externalId: v.string()
-  }).index('byExternalId', ['externalId'])
+  users,
+  tournaments
 });

@@ -9,7 +9,9 @@
  */
 
 import type * as http from "../http.js";
-import type * as myFunctions from "../myFunctions.js";
+import type * as schema_tournamentsSchema from "../schema/tournamentsSchema.js";
+import type * as schema_usersSchema from "../schema/usersSchema.js";
+import type * as tournaments from "../tournaments.js";
 import type * as users from "../users.js";
 
 import type {
@@ -20,7 +22,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   http: typeof http;
-  myFunctions: typeof myFunctions;
+  "schema/tournamentsSchema": typeof schema_tournamentsSchema;
+  "schema/usersSchema": typeof schema_usersSchema;
+  tournaments: typeof tournaments;
   users: typeof users;
 }>;
 

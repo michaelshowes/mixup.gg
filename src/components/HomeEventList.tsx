@@ -1,6 +1,8 @@
+'use client';
+
 import EventCard from './shared/EventCard';
 
-export default function HomeEventList({ events }: any) {
+export default function HomeEventList({ events }: { events: any }) {
   return (
     <div
       className={
