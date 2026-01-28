@@ -11,7 +11,10 @@ export default async function Home() {
           className='mb-4'
         />
         <h1 className='text-3xl font-semibold'>Mixup.gg</h1>
-        <p className={'text-sm text-gray-600 uppercase'}>Coming Soon..ish</p>
+        <p className={'text-lg font-medium'}>TOs First. Players Always</p>
+        <p className={'mt-4 text-sm text-gray-600 uppercase'}>
+          Coming Soon..ish
+        </p>
       </div>
     </main>
   );
