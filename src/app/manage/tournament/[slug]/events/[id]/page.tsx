@@ -1,0 +1,21 @@
+import { preloadQuery } from 'convex/nextjs';
+
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
+
+import ManageEvent from './components/ManageEvent';
+
+export default async function TournamentEventPage({
+  params
+}: {
+  params: Promise<{ id: Id<'events'> }>;
+}) {
+  const { id } = await params;
+  const data = await preloadQuery(api.events.getEventById, { id });
+
+  return (
+    <div>
+      <ManageEvent preloadedData={data} />
+    </div>
+  );
+}

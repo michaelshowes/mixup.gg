@@ -19,11 +19,33 @@ export const getTournamentBySlug = query({
   }
 });
 
+export const getTournamentWithEventsBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const tournament = await ctx.db
+      .query('tournaments')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
+      .unique();
+
+    if (!tournament) {
+      return null;
+    }
+
+    const events = await ctx.db
+      .query('events')
+      .withIndex('by_tournament', (q) => q.eq('tournamentId', tournament._id))
+      .order('desc')
+      .collect();
+
+    return { ...tournament, events };
+  }
+});
+
 export const createTournament = mutation({
   // Validators for arguments.
   args: {
     name: v.string(),
-    userId: v.string(),
+    userId: v.id('users'),
     slug: v.string(),
     description: v.optional(v.string()),
     startDate: v.number(),

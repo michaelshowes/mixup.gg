@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
+import { Toaster } from 'sonner';
+
 import SiteHeader from '@/components/global/SiteHeader';
 import Provider from '@/components/providers/Provider';
 
@@ -32,8 +34,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Provider>
-          <SiteHeader />
-          <main>{children}</main>
+          <div className={'flex h-screen flex-col'}>
+            <SiteHeader />
+            {children}
+          </div>
+          <Toaster position={'top-center'} />
         </Provider>
       </body>
     </html>

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation } from 'convex/react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel
@@ -23,45 +22,45 @@ import {
   PopoverContent,
   PopoverTrigger
 } from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
 import { Id } from '@/convex/_generated/dataModel';
-import { generateSlug } from '@/helpers/generateSlug';
 import { cn } from '@/lib/utils';
 
 import { api } from '../../../convex/_generated/api';
 import {
-  TournamentFormInput,
-  TournamentFormOutput,
-  tournamentFormSchema
-} from './schema/tournamentFormSchema';
+  EventFormInput,
+  EventFormOutput,
+  eventFormSchema
+} from './schema/eventFormSchema';
 
-export function CreateTournamentForm() {
+interface CreateEventFormProps {
+  tournamentId: Id<'tournaments'>;
+  slug: string;
+}
+
+export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
+  const createEvent = useMutation(api.events.createEvent);
   const router = useRouter();
-  const createTournament = useMutation(api.tournaments.createTournament);
-  const user = useQuery(api.users.current);
 
-  const form = useForm<TournamentFormInput, unknown, TournamentFormOutput>({
-    resolver: zodResolver(tournamentFormSchema),
+  const form = useForm<EventFormInput, unknown, EventFormOutput>({
+    resolver: zodResolver(eventFormSchema),
     defaultValues: {
       name: '',
-      description: '',
+      playerCap: 8,
       startDate: undefined,
       endDate: undefined
     }
   });
 
-  async function onSubmit(data: TournamentFormOutput) {
-    const slug = generateSlug(data.name);
-    await createTournament({
+  async function onSubmit(data: EventFormOutput) {
+    await createEvent({
       name: data.name,
-      userId: user?._id as Id<'users'>,
-      slug,
-      description: data.description || undefined,
+      tournamentId,
+      playerCap: data.playerCap,
       startDate: data.startDate.getTime(),
       endDate: data.endDate.getTime()
     });
 
-    router.push(`/manage/tournament/${slug}`);
+    router.push(`/manage/tournament/${slug}/events`);
   }
 
   return (
@@ -72,11 +71,11 @@ export function CreateTournamentForm() {
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor='name'>Tournament Name</FieldLabel>
+              <FieldLabel htmlFor='name'>Name</FieldLabel>
               <Input
                 {...field}
                 id='name'
-                placeholder='My Tournament'
+                placeholder='e.g. Street Fighter 6'
                 aria-invalid={fieldState.invalid}
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
@@ -85,21 +84,35 @@ export function CreateTournamentForm() {
         />
 
         <Controller
-          name='description'
+          name='playerCap'
           control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor='description'>Description</FieldLabel>
-              <Textarea
-                {...field}
-                id='description'
-                placeholder='Describe your tournament...'
-                aria-invalid={fieldState.invalid}
-              />
-              <FieldDescription>Optional</FieldDescription>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+          render={({ field, fieldState }) => {
+            const { onChange, onBlur, name, ref } = field;
+            return (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor='playerCap'>Player Cap</FieldLabel>
+                <Input
+                  id='playerCap'
+                  name={name}
+                  type='number'
+                  min={2}
+                  placeholder='8'
+                  aria-invalid={fieldState.invalid}
+                  value={String(field.value ?? '')}
+                  onChange={(e) =>
+                    onChange(
+                      e.target.value ? Number(e.target.value) : undefined
+                    )
+                  }
+                  onBlur={onBlur}
+                  ref={ref}
+                />
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            );
+          }}
         />
 
         <Controller
@@ -187,7 +200,7 @@ export function CreateTournamentForm() {
           type='submit'
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? 'Creating...' : 'Create Tournament'}
+          {form.formState.isSubmitting ? 'Creating...' : 'Create Event'}
         </Button>
       </FieldGroup>
     </form>

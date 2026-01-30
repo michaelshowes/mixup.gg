@@ -33,11 +33,12 @@ Users authenticate via Clerk. Clerk webhooks (validated with Svix) sync user dat
 
 ### Key Directories
 
-- `convex/` - Backend: schema definitions (`schema/`), queries/mutations (`functions.ts`), webhook handlers (`http.ts`), user sync (`users.ts`)
+- `convex/` - Backend: schema definitions (`schema/`), domain-specific queries/mutations (`users.ts`, `tournaments.ts`), webhook handlers (`http.ts`)
 - `src/app/` - Next.js pages (App Router)
 - `src/components/ui/` - Shadcn-style Radix primitives with CVA variants
 - `src/components/forms/` - Form components using React Hook Form + Zod
 - `src/components/providers/` - Context providers (Convex, Clerk)
+- `src/components/shared/` - Reusable components (EventCard, NotificationBell)
 - `src/helpers/` - Utility functions (generateSlug, titleCase)
 - `src/server/` - Server-side utilities (IGDB API integration)
 
@@ -56,13 +57,28 @@ Forms use React Hook Form with Zod validation and custom Field components:
 ### Convex Conventions
 
 - Schema tables defined in `convex/schema/` and imported into `convex/schema.ts`
-- Queries and mutations in `convex/functions.ts` (or domain-specific files like `users.ts`)
+- Queries and mutations in domain-specific files (`users.ts`, `tournaments.ts`)
 - Generated types available from `convex/_generated/api`
 - Internal functions use `internalMutation`/`internalQuery` for webhook handlers
+
+### Database Schema
+
+Tables in `convex/schema/`:
+
+- `users` - User accounts synced from Clerk
+- `tournaments` - Tournament metadata (name, slug, dates)
+- `events` - Individual events within tournaments
+- `entrants` - Participants in events
+- `stages` - Tournament stages (pools, brackets, etc.)
+- `groups` - Groups within stages
+- `matches` - Individual matches
+- `matchEvents` - Events within matches (scores, etc.)
+- `progressions` - Rules for advancing between stages
 
 ### Environment Variables
 
 Required in `.env.local`:
+
 - Clerk credentials (`NEXT_PUBLIC_CLERK_*`, `CLERK_SECRET_KEY`)
 - Convex URL (`NEXT_PUBLIC_CONVEX_URL`)
 - IGDB/Twitch API tokens for game data
