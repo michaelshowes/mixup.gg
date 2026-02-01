@@ -9,12 +9,17 @@
  */
 
 import type * as events from "../events.js";
+import type * as games from "../games.js";
 import type * as http from "../http.js";
+import type * as platforms from "../platforms.js";
 import type * as schema_entrantSchema from "../schema/entrantSchema.js";
 import type * as schema_eventsSchema from "../schema/eventsSchema.js";
+import type * as schema_gameCoversSchema from "../schema/gameCoversSchema.js";
+import type * as schema_gamesSchema from "../schema/gamesSchema.js";
 import type * as schema_groupSchema from "../schema/groupSchema.js";
 import type * as schema_matchEventSchema from "../schema/matchEventSchema.js";
 import type * as schema_matchSchema from "../schema/matchSchema.js";
+import type * as schema_platformSchema from "../schema/platformSchema.js";
 import type * as schema_progressionSchema from "../schema/progressionSchema.js";
 import type * as schema_stageSchema from "../schema/stageSchema.js";
 import type * as schema_tournamentsSchema from "../schema/tournamentsSchema.js";
@@ -30,12 +35,17 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   events: typeof events;
+  games: typeof games;
   http: typeof http;
+  platforms: typeof platforms;
   "schema/entrantSchema": typeof schema_entrantSchema;
   "schema/eventsSchema": typeof schema_eventsSchema;
+  "schema/gameCoversSchema": typeof schema_gameCoversSchema;
+  "schema/gamesSchema": typeof schema_gamesSchema;
   "schema/groupSchema": typeof schema_groupSchema;
   "schema/matchEventSchema": typeof schema_matchEventSchema;
   "schema/matchSchema": typeof schema_matchSchema;
+  "schema/platformSchema": typeof schema_platformSchema;
   "schema/progressionSchema": typeof schema_progressionSchema;
   "schema/stageSchema": typeof schema_stageSchema;
   "schema/tournamentsSchema": typeof schema_tournamentsSchema;

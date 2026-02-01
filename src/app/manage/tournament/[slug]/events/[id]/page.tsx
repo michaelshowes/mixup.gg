@@ -8,14 +8,17 @@ import ManageEvent from './components/ManageEvent';
 export default async function TournamentEventPage({
   params
 }: {
-  params: Promise<{ id: Id<'events'> }>;
+  params: Promise<{ slug: string; id: Id<'events'> }>;
 }) {
-  const { id } = await params;
+  const { slug, id } = await params;
   const data = await preloadQuery(api.events.getEventById, { id });
 
   return (
     <div>
-      <ManageEvent preloadedData={data} />
+      <ManageEvent
+        preloadedData={data}
+        slug={slug}
+      />
     </div>
   );
 }

@@ -26,6 +26,21 @@ export const createEvent = mutation({
   args: {
     name: v.string(),
     tournamentId: v.id('tournaments'),
+    game: v.object({
+      id: v.id('games'),
+      name: v.string(),
+      cover: v.object({
+        imageId: v.string(),
+        height: v.number(),
+        width: v.number()
+      }),
+      platforms: v.array(
+        v.object({
+          name: v.string(),
+          slug: v.string()
+        })
+      )
+    }),
     playerCap: v.number(),
     startDate: v.number(),
     endDate: v.number()
@@ -35,6 +50,12 @@ export const createEvent = mutation({
       const id = await ctx.db.insert('events', {
         name: args.name,
         tournamentId: args.tournamentId,
+        game: {
+          id: args.game.id,
+          name: args.game.name,
+          cover: args.game.cover,
+          platforms: args.game.platforms
+        },
         playerCap: args.playerCap,
         startDate: args.startDate,
         endDate: args.endDate
@@ -66,6 +87,21 @@ export const updateEvent = mutation({
   args: {
     id: v.id('events'),
     name: v.string(),
+    game: v.object({
+      id: v.id('games'),
+      name: v.string(),
+      cover: v.object({
+        imageId: v.string(),
+        height: v.number(),
+        width: v.number()
+      }),
+      platforms: v.array(
+        v.object({
+          name: v.string(),
+          slug: v.string()
+        })
+      )
+    }),
     playerCap: v.number(),
     startDate: v.number(),
     endDate: v.number()
@@ -73,7 +109,15 @@ export const updateEvent = mutation({
   handler: async (ctx, args) => {
     try {
       const { id, ...updates } = args;
-      await ctx.db.patch(id, updates);
+      await ctx.db.patch(id, {
+        ...updates,
+        game: {
+          id: args.game.id,
+          name: args.game.name,
+          cover: args.game.cover,
+          platforms: args.game.platforms
+        }
+      });
       return {
         success: true,
         message: `${args.name} updated successfully`

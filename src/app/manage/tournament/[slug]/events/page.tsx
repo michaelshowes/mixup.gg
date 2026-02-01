@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { preloadQuery } from 'convex/nextjs';
 
-import EventsTable from '@/components/EventsTable';
+import EventsTable from '@/app/manage/tournament/[slug]/components/EventsTable';
 import { Button } from '@/components/ui/button';
 import { api } from '@/convex/_generated/api';
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import {
@@ -8,15 +9,22 @@ import {
   ColumnFiltersState,
   PaginationState,
   RowSelectionState,
+  SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table';
 import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react';
-import { EllipsisVerticalIcon, PencilIcon, TrashIcon } from 'lucide-react';
+import {
+  ArrowUpDownIcon,
+  EllipsisVerticalIcon,
+  SettingsIcon,
+  TrashIcon
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -57,6 +65,8 @@ import { Doc, Id } from '@/convex/_generated/dataModel';
 import { TournamentProps } from '@/convex/schema/tournamentsSchema';
 import { formatDate } from '@/helpers/formatDate';
 
+import EmptyEvent from './EmptyEvent';
+
 type Props = {
   preloadedData: Preloaded<
     typeof api.tournaments.getTournamentWithEventsBySlug
@@ -64,6 +74,7 @@ type Props = {
 };
 
 export default function EventsTable({ preloadedData }: Props) {
+  const router = useRouter();
   const { slug, events } = usePreloadedQuery(
     preloadedData
   ) as TournamentProps & {
@@ -72,11 +83,12 @@ export default function EventsTable({ preloadedData }: Props) {
   const deleteEvent = useMutation(api.events.deleteEvent);
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 2
+    pageSize: 10
   });
 
   async function handleDelete(id: Id<'events'>) {
@@ -115,7 +127,15 @@ export default function EventsTable({ preloadedData }: Props) {
     },
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: ({ column }) => (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Name
+          <ArrowUpDownIcon className='ml-2' />
+        </Button>
+      ),
       cell: ({ row }) => (
         <span className='font-semibold'>{row.getValue('name')}</span>
       ),
@@ -123,7 +143,16 @@ export default function EventsTable({ preloadedData }: Props) {
     },
     {
       accessorKey: 'playerCap',
-      header: 'Player Cap'
+      header: ({ column }) => (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Player Cap
+          <ArrowUpDownIcon className='ml-2' />
+        </Button>
+      ),
+      cell: ({ row }) => <div>{row.getValue('playerCap')}</div>
     },
     {
       id: 'dates',
@@ -164,8 +193,8 @@ export default function EventsTable({ preloadedData }: Props) {
                     <Link
                       href={`/manage/tournament/${slug}/events/${row.original._id}`}
                     >
-                      <PencilIcon size={16} />
-                      Edit Event
+                      <SettingsIcon size={16} />
+                      Manage Event
                     </Link>
                   </Button>
                 </li>
@@ -222,17 +251,24 @@ export default function EventsTable({ preloadedData }: Props) {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     state: {
       rowSelection,
+      sorting,
       columnFilters,
       columnVisibility,
       pagination
     }
   });
+
+  if (events.length === 0) {
+    return <EmptyEvent slug={slug} />;
+  }
 
   return (
     <div className='space-y-4'>
@@ -297,9 +333,23 @@ export default function EventsTable({ preloadedData }: Props) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className='cursor-pointer'
+                  onClick={() =>
+                    router.push(
+                      `/manage/tournament/${slug}/events/${row.original._id}`
+                    )
+                  }
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      onClick={
+                        cell.column.id === 'select' ||
+                        cell.column.id === 'actions'
+                          ? (e) => e.stopPropagation()
+                          : undefined
+                      }
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
