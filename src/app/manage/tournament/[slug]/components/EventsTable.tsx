@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -18,7 +19,12 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table';
-import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react';
+import {
+  Preloaded,
+  useMutation,
+  usePreloadedQuery,
+  useQuery
+} from 'convex/react';
 import {
   ArrowUpDownIcon,
   EllipsisVerticalIcon,
@@ -52,6 +58,7 @@ import {
   PopoverContent,
   PopoverTrigger
 } from '@/components/ui/popover';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -73,15 +80,26 @@ type Props = {
   >;
 };
 
-export default function EventsTable({ preloadedData }: Props) {
-  const router = useRouter();
-  const { slug, events } = usePreloadedQuery(
-    preloadedData
-  ) as TournamentProps & {
-    events: Doc<'events'>[];
-  };
-  const deleteEvent = useMutation(api.events.deleteEvent);
+function GameCover({ id }: { id: number }) {
+  const game = useQuery(api.games.getById, { id });
 
+  return (
+    <div className='aspect-9/12 max-w-[60px]'>
+      {game ? (
+        <Image
+          src={`https://images.igdb.com/igdb/image/upload/t_cover_small/${game?.cover?.imageId}.jpg`}
+          alt={game?.name ?? 'Game Cover'}
+          width={game?.cover.width ?? 100}
+          height={game?.cover.height ?? 100}
+        />
+      ) : (
+        <Skeleton className={'h-20 w-16 rounded-none'} />
+      )}
+    </div>
+  );
+}
+
+export default function EventsTable({ preloadedData }: Props) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -90,6 +108,13 @@ export default function EventsTable({ preloadedData }: Props) {
     pageIndex: 0,
     pageSize: 10
   });
+  const { slug, events } = usePreloadedQuery(
+    preloadedData
+  ) as TournamentProps & {
+    events: Doc<'events'>[];
+  };
+  const deleteEvent = useMutation(api.events.deleteEvent);
+  const router = useRouter();
 
   async function handleDelete(id: Id<'events'>) {
     const res = await deleteEvent({ id });
@@ -126,6 +151,13 @@ export default function EventsTable({ preloadedData }: Props) {
       enableHiding: false
     },
     {
+      accessorKey: 'game',
+      header: 'Game',
+      cell: ({ row }) => {
+        return <GameCover id={row.getValue('game')} />;
+      }
+    },
+    {
       accessorKey: 'name',
       header: ({ column }) => (
         <Button
@@ -142,7 +174,7 @@ export default function EventsTable({ preloadedData }: Props) {
       enableHiding: false
     },
     {
-      accessorKey: 'playerCap',
+      accessorKey: 'entrantCap',
       header: ({ column }) => (
         <Button
           variant='ghost'
@@ -152,17 +184,12 @@ export default function EventsTable({ preloadedData }: Props) {
           <ArrowUpDownIcon className='ml-2' />
         </Button>
       ),
-      cell: ({ row }) => <div>{row.getValue('playerCap')}</div>
+      cell: ({ row }) => <div>{row.getValue('entrantCap')}</div>
     },
     {
-      id: 'dates',
-      header: 'Dates',
-      cell: ({ row }) => (
-        <span>
-          {formatDate(row.original.startDate)} -{' '}
-          {formatDate(row.original.endDate)}
-        </span>
-      )
+      id: 'startDate',
+      header: 'Start Date',
+      cell: ({ row }) => <span>{formatDate(row.original.startDate)}</span>
     },
     {
       id: 'actions',

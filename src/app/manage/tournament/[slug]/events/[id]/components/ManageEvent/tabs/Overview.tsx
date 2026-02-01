@@ -1,10 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react';
+import { useMutation } from 'convex/react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
@@ -15,17 +14,6 @@ import {
   EventFormOutput,
   eventFormSchema
 } from '@/components/forms/schema/eventFormSchema';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -45,42 +33,31 @@ import { Doc, Id } from '@/convex/_generated/dataModel';
 import { cn } from '@/lib/utils';
 
 type Props = {
-  preloadedData: Preloaded<typeof api.events.getEventById>;
+  event: Doc<'events'>;
   slug: string;
 };
 
-export default function ManageEvent({ preloadedData, slug }: Props) {
-  const event = usePreloadedQuery(preloadedData) as Doc<'events'>;
+export default function Overview({ event, slug }: Props) {
   const updateEvent = useMutation(api.events.updateEvent);
-  const deleteEvent = useMutation(api.events.deleteEvent);
-  const router = useRouter();
   const form = useForm<EventFormInput, unknown, EventFormOutput>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
       name: event?.name ?? '',
-      playerCap: event?.playerCap ?? 8,
-      startDate: event?.startDate ? new Date(event.startDate) : undefined,
-      endDate: event?.endDate ? new Date(event.endDate) : undefined
+      game: event?.game,
+      eventPlatforms: event?.eventPlatforms ?? [],
+      entrantCap: event?.entrantCap ?? 8,
+      startDate: event?.startDate ? new Date(event.startDate) : undefined
     }
   });
 
-  async function handleDelete(id: Id<'events'>) {
-    const res = await deleteEvent({ id });
-    if (res.success) {
-      toast.success(res.message);
-      router.push(`/manage/tournament/${slug}/events`);
-    } else {
-      toast.error(res.message);
-    }
-  }
-
   async function onSubmit(data: EventFormOutput) {
     const res = await updateEvent({
-      id: event._id,
-      name: data.name,
-      playerCap: data.playerCap,
-      startDate: data.startDate.getTime(),
-      endDate: data.endDate.getTime()
+      id: event?._id as Id<'events'>,
+      name: data.name as string,
+      game: data.game,
+      eventPlatforms: data.eventPlatforms,
+      entrantCap: data.entrantCap,
+      startDate: data.startDate.getTime()
     });
 
     if (res.success) {
@@ -91,19 +68,9 @@ export default function ManageEvent({ preloadedData, slug }: Props) {
   }
 
   return (
-    <div className={'mx-auto max-w-[800px] space-y-10'}>
-      <h2 className='text-2xl font-bold uppercase'>{event?.name}</h2>
-      <div className={'border border-gray-200 bg-white p-2'}>
-        <Image
-          src={'https://placehold.co/90x120?text=Game+Cover'}
-          alt={event?.name ?? 'Event Image'}
-          width={90}
-          height={120}
-          unoptimized
-        />
-      </div>
+    <>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <FieldGroup>
+        <FieldGroup className={'gap-4'}>
           <Controller
             name='name'
             control={form.control}
@@ -132,7 +99,7 @@ export default function ManageEvent({ preloadedData, slug }: Props) {
           />
 
           <Controller
-            name='playerCap'
+            name='entrantCap'
             control={form.control}
             render={({ field, fieldState }) => {
               const { onChange, onBlur, name, ref } = field;
@@ -142,13 +109,13 @@ export default function ManageEvent({ preloadedData, slug }: Props) {
                   className={'flex-row border border-gray-200 bg-white p-4'}
                 >
                   <FieldLabel
-                    htmlFor='playerCap'
+                    htmlFor='entrantCap'
                     className={'font-semibold'}
                   >
                     Player Cap
                   </FieldLabel>
                   <Input
-                    id='playerCap'
+                    id='entrantCap'
                     name={name}
                     type='number'
                     min={2}
@@ -212,47 +179,6 @@ export default function ManageEvent({ preloadedData, slug }: Props) {
             )}
           />
 
-          <Controller
-            name='endDate'
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='endDate'>End Date</FieldLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id='endDate'
-                      variant='outline'
-                      aria-invalid={fieldState.invalid}
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !field.value && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className='mr-2 size-4' />
-                      {field.value ? (
-                        format(field.value, 'PPP')
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className='w-auto p-0'>
-                    <Calendar
-                      mode='single'
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date()}
-                    />
-                  </PopoverContent>
-                </Popover>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-
           <Button
             type='submit'
             className={'ml-auto w-fit'}
@@ -262,45 +188,6 @@ export default function ManageEvent({ preloadedData, slug }: Props) {
           </Button>
         </FieldGroup>
       </form>
-
-      <div
-        className={
-          'border-destructive flex flex-col flex-wrap items-center justify-between gap-1 border-2 bg-white p-4 md:flex-row'
-        }
-      >
-        <div className={'flex-1'}>
-          <h3 className={'text-destructive text-lg font-bold'}>Delete Event</h3>
-          <p className={'text-sm text-gray-500'}>
-            This action cannot be undone. This will permanently delete the event
-            from the tournament.
-          </p>
-        </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant={'destructive'}>Delete Event</Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {`Delete ${event.name} event?`}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the
-                event from the tournament.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                variant={'destructive'}
-                onClick={() => handleDelete(event._id)}
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </div>
+    </>
   );
 }

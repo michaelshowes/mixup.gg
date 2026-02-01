@@ -26,39 +26,22 @@ export const createEvent = mutation({
   args: {
     name: v.string(),
     tournamentId: v.id('tournaments'),
-    game: v.object({
-      id: v.id('games'),
-      name: v.string(),
-      cover: v.object({
-        imageId: v.string(),
-        height: v.number(),
-        width: v.number()
-      }),
-      platforms: v.array(
-        v.object({
-          name: v.string(),
-          slug: v.string()
-        })
-      )
-    }),
-    playerCap: v.number(),
-    startDate: v.number(),
-    endDate: v.number()
+    game: v.number(),
+    description: v.optional(v.string()),
+    eventPlatforms: v.array(v.number()),
+    entrantCap: v.number(),
+    startDate: v.number()
   },
   handler: async (ctx, args) => {
     try {
       const id = await ctx.db.insert('events', {
         name: args.name,
         tournamentId: args.tournamentId,
-        game: {
-          id: args.game.id,
-          name: args.game.name,
-          cover: args.game.cover,
-          platforms: args.game.platforms
-        },
-        playerCap: args.playerCap,
-        startDate: args.startDate,
-        endDate: args.endDate
+        game: args.game,
+        description: args.description,
+        eventPlatforms: args.eventPlatforms,
+        entrantCap: args.entrantCap,
+        startDate: args.startDate
       });
 
       console.log('Added new event with id:', id);
@@ -87,36 +70,22 @@ export const updateEvent = mutation({
   args: {
     id: v.id('events'),
     name: v.string(),
-    game: v.object({
-      id: v.id('games'),
-      name: v.string(),
-      cover: v.object({
-        imageId: v.string(),
-        height: v.number(),
-        width: v.number()
-      }),
-      platforms: v.array(
-        v.object({
-          name: v.string(),
-          slug: v.string()
-        })
-      )
-    }),
-    playerCap: v.number(),
-    startDate: v.number(),
-    endDate: v.number()
+    game: v.number(),
+    description: v.optional(v.string()),
+    eventPlatforms: v.array(v.number()),
+    entrantCap: v.number(),
+    startDate: v.number()
   },
   handler: async (ctx, args) => {
     try {
       const { id, ...updates } = args;
       await ctx.db.patch(id, {
         ...updates,
-        game: {
-          id: args.game.id,
-          name: args.game.name,
-          cover: args.game.cover,
-          platforms: args.game.platforms
-        }
+        game: args.game,
+        description: args.description,
+        eventPlatforms: args.eventPlatforms,
+        entrantCap: args.entrantCap,
+        startDate: args.startDate
       });
       return {
         success: true,

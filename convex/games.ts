@@ -11,7 +11,7 @@ export const list = query({
 
 export const add = mutation({
   args: {
-    gameId: v.number(),
+    id: v.number(),
     name: v.string(),
     cover: v.object({
       imageId: v.string(),
@@ -22,7 +22,7 @@ export const add = mutation({
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert('games', {
-      gameId: args.gameId,
+      id: args.id,
       name: args.name,
       cover: args.cover,
       platforms: args.platforms
@@ -30,9 +30,12 @@ export const add = mutation({
   }
 });
 
-export const getGameById = query({
-  args: { id: v.id('games') },
+export const getById = query({
+  args: { id: v.number() },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    return await ctx.db
+      .query('games')
+      .withIndex('byId', (q) => q.eq('id', args.id))
+      .unique();
   }
 });

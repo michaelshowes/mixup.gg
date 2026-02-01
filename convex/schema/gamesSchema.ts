@@ -2,7 +2,7 @@ import { defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
 export const games = defineTable({
-  gameId: v.number(),
+  id: v.number(),
   name: v.string(),
   cover: v.object({
     imageId: v.string(),
@@ -10,4 +10,4 @@ export const games = defineTable({
     width: v.number()
   }),
   platforms: v.array(v.number())
-});
+}).index('byId', ['id']);

@@ -14,15 +14,20 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
-  ComboboxValue
+  ComboboxValue,
+  useComboboxAnchor
 } from '@/components/ui/combobox';
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel
@@ -37,6 +42,7 @@ import { Doc, Id } from '@/convex/_generated/dataModel';
 import { cn } from '@/lib/utils';
 
 import { api } from '../../../convex/_generated/api';
+import { Textarea } from '../ui/textarea';
 import {
   EventFormInput,
   EventFormOutput,
@@ -51,13 +57,13 @@ interface CreateEventFormProps {
 export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
   const [selectedGame, setSelectedGame] = useState<Doc<'games'> | null>(null);
   const [gameSearch, setGameSearch] = useState('');
+  const [platformSearch, setPlatformSearch] = useState('');
 
   const games = useQuery(api.games.list);
   const platforms = useQuery(api.platforms.list);
   const createEvent = useMutation(api.events.createEvent);
   const router = useRouter();
-
-  console.log(selectedGame);
+  const anchor = useComboboxAnchor();
 
   const filteredGames = gameSearch
     ? (games?.filter((game) =>
@@ -70,34 +76,24 @@ export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
     defaultValues: {
       name: '',
       game: undefined,
-      playerCap: 8,
-      startDate: undefined,
-      endDate: undefined
+      eventPlatforms: [],
+      entrantCap: null,
+      startDate: undefined
     }
   });
 
   async function onSubmit(data: EventFormOutput) {
-    const selectedGame = games?.find((g) => g.name === data.game.name);
+    const selectedGame = games?.find((g) => g.id === data.game);
     if (!selectedGame) return;
 
     await createEvent({
-      name: data.name,
+      name: data.name || selectedGame.name,
       tournamentId,
-      game: {
-        id: selectedGame._id,
-        name: selectedGame.name,
-        cover: selectedGame.cover,
-        platforms: selectedGame.platforms.map((item) => {
-          const platform = platforms?.find((p) => p.id === item);
-          return {
-            name: platform?.name ?? '',
-            slug: platform?.slug ?? ''
-          };
-        })
-      },
-      playerCap: data.playerCap,
-      startDate: data.startDate.getTime(),
-      endDate: data.endDate.getTime()
+      game: selectedGame.id,
+      description: data.description || undefined,
+      eventPlatforms: data.eventPlatforms,
+      entrantCap: data.entrantCap,
+      startDate: data.startDate.getTime()
     });
 
     router.push(`/manage/tournament/${slug}/events`);
@@ -106,79 +102,48 @@ export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       <FieldGroup>
-        <Controller
-          name='name'
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor='name'>Name</FieldLabel>
-              <Input
-                {...field}
-                id='name'
-                placeholder='e.g. Street Fighter 6 Weekly'
-                aria-invalid={fieldState.invalid}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        <Controller
-          name='game'
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor='game'>Game</FieldLabel>
-              <Combobox
-                value={field.value ?? null}
-                onValueChange={(value) => {
-                  field.onChange(value ?? undefined);
-                  setGameSearch('');
-                  setSelectedGame(
-                    filteredGames.find((g) => g.name === value?.name) ?? null
-                  );
-                }}
-              >
-                <ComboboxTrigger
-                  render={
-                    <Button
-                      variant='outline'
-                      className='w-64 justify-between font-normal'
-                    >
-                      <ComboboxValue placeholder='Select a game'>
-                        {field.value?.name}
-                      </ComboboxValue>
-                    </Button>
-                  }
-                />
-                <ComboboxContent>
-                  <ComboboxInput
-                    showTrigger={false}
-                    placeholder='Search'
-                    value={gameSearch}
-                    onChange={(e) => setGameSearch(e.target.value)}
+        {!selectedGame && (
+          <Controller
+            name='game'
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor='game'>Game</FieldLabel>
+                <Combobox
+                  value={field.value ?? null}
+                  onValueChange={(value) => {
+                    field.onChange(value ?? undefined);
+                    setGameSearch('');
+                    setSelectedGame(
+                      filteredGames.find((g) => g.id === value) ?? null
+                    );
+                  }}
+                >
+                  <ComboboxTrigger
+                    render={
+                      <Button
+                        variant='outline'
+                        className='w-64 justify-between font-normal'
+                      >
+                        <ComboboxValue placeholder='Select a game'>
+                          {filteredGames.find((g) => g.id === field.value)
+                            ?.name ?? 'Select a game'}
+                        </ComboboxValue>
+                      </Button>
+                    }
                   />
-                  <ComboboxList>
-                    {filteredGames.map((game) => {
-                      const gameValue = {
-                        id: game._id,
-                        name: game.name,
-                        cover: game.cover,
-                        platforms: game.platforms.map((platformId) => {
-                          const platform = platforms?.find(
-                            (p) => p.id === platformId
-                          );
-                          return {
-                            id: String(platformId),
-                            name: platform?.name ?? '',
-                            slug: platform?.slug ?? ''
-                          };
-                        })
-                      };
-                      return (
+                  <ComboboxContent>
+                    <ComboboxInput
+                      showTrigger={false}
+                      placeholder='Search'
+                      value={gameSearch}
+                      onChange={(e) => setGameSearch(e.target.value)}
+                    />
+                    <ComboboxList>
+                      {filteredGames.map((game) => (
                         <ComboboxItem
                           key={game._id}
-                          value={gameValue}
+                          value={game.id}
                         >
                           <div
                             className={
@@ -197,44 +162,218 @@ export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
                             <div>
                               {game.name}
                               <div className={'flex gap-1'}>
-                                {gameValue.platforms.map((platform) => (
-                                  <div
-                                    key={platform.id}
-                                    className={
-                                      'rounded-full bg-gray-100 px-2 text-xs'
-                                    }
-                                  >
-                                    {platform.name}
-                                  </div>
-                                ))}
+                                {game.platforms.map((platformId) => {
+                                  const platform = platforms?.find(
+                                    (p) => p.id === platformId
+                                  );
+                                  return (
+                                    <div
+                                      key={platformId}
+                                      className={
+                                        'rounded-full bg-gray-100 px-2 text-xs'
+                                      }
+                                    >
+                                      {platform?.name ?? ''}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           </div>
                         </ComboboxItem>
-                      );
-                    })}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
+                      ))}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+        )}
+
+        {selectedGame && (
+          <div
+            className={
+              'flex flex-col items-center gap-x-4 border border-gray-200 bg-white p-2 md:flex-row md:items-start'
+            }
+          >
+            <div className={'aspect-9/12 max-w-[300px] md:max-w-[160px]'}>
+              <Image
+                src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${selectedGame.cover.imageId}.jpg`}
+                alt={selectedGame.name}
+                width={selectedGame.cover.width}
+                height={selectedGame.cover.height}
+                unoptimized
+              />
+            </div>
+            <div className={'w-full space-y-8'}>
+              <div>
+                <h3 className={'text-2xl font-bold'}>{selectedGame.name}</h3>
+                <button
+                  className={'text-xs'}
+                  onClick={() => {
+                    setSelectedGame(null);
+                    form.setValue('game', 0);
+                  }}
+                >
+                  Change Game
+                </button>
+              </div>
+              <Controller
+                name='eventPlatforms'
+                control={form.control}
+                render={({ field, fieldState }) => {
+                  const gamePlatformIds = selectedGame.platforms.map((id) =>
+                    String(id)
+                  );
+                  const platformItems = (platforms ?? [])
+                    .filter((p) => gamePlatformIds.includes(String(p.id)))
+                    .map((p) => ({
+                      id: String(p.id),
+                      name: p.name,
+                      slug: p.slug
+                    }));
+                  const selectedIds = (field.value ?? []).map((v: number) =>
+                    String(v)
+                  );
+                  const availablePlatforms = platformItems.filter(
+                    (p) => !selectedIds.includes(p.id)
+                  );
+                  const filteredPlatforms = platformSearch
+                    ? availablePlatforms.filter((p) =>
+                        p.name
+                          .toLowerCase()
+                          .includes(platformSearch.toLowerCase())
+                      )
+                    : availablePlatforms;
+                  return (
+                    <Field
+                      data-invalid={fieldState.invalid}
+                      className={'gap-1'}
+                    >
+                      <FieldLabel htmlFor='platforms'>Platforms</FieldLabel>
+                      <FieldDescription className={'text-xs'}>
+                        The platform the event will be played on. Select
+                        multiple if the event will be played on multiple
+                        platforms.
+                      </FieldDescription>
+                      <Combobox
+                        multiple
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setPlatformSearch('');
+                        }}
+                      >
+                        <ComboboxChips
+                          ref={anchor}
+                          className='w-full bg-white'
+                        >
+                          <ComboboxValue>
+                            {(field.value ?? []).map((item: number) => (
+                              <ComboboxChip key={item}>
+                                {platforms?.find((p) => p.id === item)?.name ??
+                                  'Unknown'}
+                              </ComboboxChip>
+                            ))}
+                          </ComboboxValue>
+                          <ComboboxChipsInput
+                            placeholder='Add platform'
+                            value={platformSearch}
+                            onChange={(e) => setPlatformSearch(e.target.value)}
+                          />
+                        </ComboboxChips>
+                        <ComboboxContent anchor={anchor}>
+                          <ComboboxList>
+                            {filteredPlatforms.map((platform) => (
+                              <ComboboxItem
+                                key={platform.id}
+                                value={Number(platform.id)}
+                                className={'cursor-pointer'}
+                              >
+                                {platform.name}
+                              </ComboboxItem>
+                            ))}
+                          </ComboboxList>
+                        </ComboboxContent>
+                      </Combobox>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        <Controller
+          name='name'
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor='name'>Event Name</FieldLabel>
+              <FieldDescription className={'text-xs'}>
+                The name of the event. If left blank, the game name will be
+                used.
+              </FieldDescription>
+              <Input
+                {...field}
+                id='name'
+                placeholder='e.g. Street Fighter 6 Weekly'
+                aria-invalid={fieldState.invalid}
+                className={'bg-white'}
+              />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
         />
 
         <Controller
-          name='playerCap'
+          name='description'
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor='description'>Description</FieldLabel>
+              <FieldDescription className={'text-xs'}>
+                A description of the event.
+              </FieldDescription>
+              <Textarea
+                {...field}
+                id='description'
+                placeholder='Describe your event...'
+                aria-invalid={fieldState.invalid}
+                className={'bg-white'}
+              />
+              <FieldDescription className={'text-xs'}>
+                Optional
+              </FieldDescription>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name='entrantCap'
           control={form.control}
           render={({ field, fieldState }) => {
             const { onChange, onBlur, name, ref } = field;
             return (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='playerCap'>Player Cap</FieldLabel>
+                <FieldLabel htmlFor='entrantCap'>Player Cap</FieldLabel>
+                <FieldDescription className={'text-xs'}>
+                  The maximum number of players allowed to participate in the
+                  event. Must be at least 2 players.
+                </FieldDescription>
                 <Input
-                  id='playerCap'
+                  id='entrantCap'
                   name={name}
                   type='number'
                   min={2}
-                  placeholder='8'
+                  placeholder='16'
                   aria-invalid={fieldState.invalid}
                   value={String(field.value ?? '')}
                   onChange={(e) =>
@@ -244,6 +383,7 @@ export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
                   }
                   onBlur={onBlur}
                   ref={ref}
+                  className={'bg-white'}
                 />
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />
@@ -253,96 +393,44 @@ export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
           }}
         />
 
-        <div
-          className={
-            'grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4'
-          }
-        >
-          <Controller
-            name='startDate'
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='startDate'>Start Date</FieldLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id='startDate'
-                      variant='outline'
-                      aria-invalid={fieldState.invalid}
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !field.value && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className='mr-2 size-4' />
-                      {field.value ? (
-                        format(field.value, 'PPP')
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className='w-auto p-0'>
-                    <Calendar
-                      mode='single'
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date()}
-                    />
-                  </PopoverContent>
-                </Popover>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-
-          <Controller
-            name='endDate'
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='endDate'>End Date</FieldLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id='endDate'
-                      variant='outline'
-                      aria-invalid={fieldState.invalid}
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !field.value && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className='mr-2 size-4' />
-                      {field.value ? (
-                        format(field.value, 'PPP')
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className='w-auto p-0'>
-                    <Calendar
-                      mode='single'
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => {
-                        const startDate = form.getValues('startDate');
-                        return startDate ? date < startDate : date < new Date();
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-        </div>
+        <Controller
+          name='startDate'
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor='startDate'>Start Date</FieldLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id='startDate'
+                    variant='outline'
+                    aria-invalid={fieldState.invalid}
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !field.value && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className='mr-2 size-4' />
+                    {field.value ? (
+                      format(field.value, 'PPP')
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className='w-auto p-0'>
+                  <Calendar
+                    mode='single'
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    disabled={(date) => date < new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
 
         <Button
           type='submit'

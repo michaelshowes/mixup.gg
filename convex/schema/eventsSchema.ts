@@ -6,24 +6,11 @@ import { Doc } from '../_generated/dataModel';
 export const events = defineTable({
   name: v.string(),
   tournamentId: v.id('tournaments'),
-  game: v.object({
-    id: v.id('games'),
-    name: v.string(),
-    cover: v.object({
-      imageId: v.string(),
-      height: v.number(),
-      width: v.number()
-    }),
-    platforms: v.array(
-      v.object({
-        name: v.string(),
-        slug: v.string()
-      })
-    )
-  }),
-  playerCap: v.number(),
-  startDate: v.number(),
-  endDate: v.number()
+  game: v.number(),
+  description: v.optional(v.string()),
+  eventPlatforms: v.array(v.number()),
+  entrantCap: v.number(),
+  startDate: v.number()
 }).index('by_tournament', ['tournamentId']);
 
 export type EventProps = WithoutSystemFields<Doc<'events'>>;
