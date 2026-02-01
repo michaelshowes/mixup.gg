@@ -37,12 +37,7 @@ export default function ManageEvent({ preloadedData, slug }: Props) {
       title: 'Overview',
       slug: 'overview',
       description: 'View details about the event.',
-      component: (
-        <Overview
-          event={event}
-          slug={slug}
-        />
-      )
+      component: <Overview event={event} />
     },
     {
       title: 'Analytics',
