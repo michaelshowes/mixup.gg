@@ -32,12 +32,7 @@ import { api } from '@/convex/_generated/api';
 import { Doc, Id } from '@/convex/_generated/dataModel';
 import { cn } from '@/lib/utils';
 
-type Props = {
-  event: Doc<'events'>;
-  slug: string;
-};
-
-export default function Overview({ event, slug }: Props) {
+export default function Overview({ event }: { event: Doc<'events'> }) {
   const updateEvent = useMutation(api.events.updateEvent);
   const form = useForm<EventFormInput, unknown, EventFormOutput>({
     resolver: zodResolver(eventFormSchema),
