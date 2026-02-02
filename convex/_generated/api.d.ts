@@ -24,6 +24,7 @@ import type * as schema_progressionSchema from "../schema/progressionSchema.js";
 import type * as schema_stageSchema from "../schema/stageSchema.js";
 import type * as schema_tournamentsSchema from "../schema/tournamentsSchema.js";
 import type * as schema_usersSchema from "../schema/usersSchema.js";
+import type * as stages from "../stages.js";
 import type * as tournaments from "../tournaments.js";
 import type * as users from "../users.js";
 
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   "schema/stageSchema": typeof schema_stageSchema;
   "schema/tournamentsSchema": typeof schema_tournamentsSchema;
   "schema/usersSchema": typeof schema_usersSchema;
+  stages: typeof stages;
   tournaments: typeof tournaments;
   users: typeof users;
 }>;

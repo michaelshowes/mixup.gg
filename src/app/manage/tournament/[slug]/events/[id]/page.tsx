@@ -11,12 +11,14 @@ export default async function TournamentEventPage({
   params: Promise<{ slug: string; id: Id<'events'> }>;
 }) {
   const { slug, id } = await params;
-  const data = await preloadQuery(api.events.getEventById, { id });
+  const event = await preloadQuery(api.events.getEventById, { id });
+  const stages = await preloadQuery(api.stages.getByEvent, { eventId: id });
 
   return (
     <div>
       <ManageEvent
-        preloadedData={data}
+        preloadedEvent={event}
+        preloadedStages={stages}
         slug={slug}
       />
     </div>

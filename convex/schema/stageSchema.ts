@@ -9,4 +9,4 @@ export const stages = defineTable({
   settings: v.object({
     poolCount: v.number()
   })
-});
+}).index('by_event', ['eventId']);

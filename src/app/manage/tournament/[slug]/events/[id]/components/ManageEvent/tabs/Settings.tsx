@@ -25,7 +25,7 @@ type Props = {
   slug: string;
 };
 
-export default function EventSettings({ event, slug }: Props) {
+export default function Settings({ event, slug }: Props) {
   const deleteEvent = useMutation(api.events.deleteEvent);
   const router = useRouter();
 

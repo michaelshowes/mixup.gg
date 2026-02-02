@@ -15,16 +15,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api } from '@/convex/_generated/api';
 import { Doc } from '@/convex/_generated/dataModel';
 
-import EventSettings from './tabs/EventSettings';
+import Bracketing from './tabs/Bracketing';
 import Overview from './tabs/Overview';
+import Settings from './tabs/Settings';
 
 type Props = {
-  preloadedData: Preloaded<typeof api.events.getEventById>;
+  preloadedEvent: Preloaded<typeof api.events.getEventById>;
+  preloadedStages: Preloaded<typeof api.stages.getByEvent>;
   slug: string;
 };
 
-export default function ManageEvent({ preloadedData, slug }: Props) {
-  const event = usePreloadedQuery(preloadedData) as Doc<'events'> | null;
+export default function ManageEvent({
+  preloadedEvent,
+  preloadedStages,
+  slug
+}: Props) {
+  const event = usePreloadedQuery(preloadedEvent) as Doc<'events'> | null;
   const game = useQuery(api.games.getById, event ? { id: event.game } : 'skip');
   const platforms = useQuery(api.platforms.list);
 
@@ -40,25 +46,34 @@ export default function ManageEvent({ preloadedData, slug }: Props) {
       component: <Overview event={event} />
     },
     {
-      title: 'Analytics',
-      slug: 'analytics',
-      description:
-        'Track performance and user engagement metrics. Monitor trends and identify growth opportunities.',
-      component: <div>Analytics</div>
+      title: 'Seeding',
+      slug: 'seeding',
+      description: 'Manage your event seeding and rankings.',
+      component: <div>Seeding</div>
     },
     {
-      title: 'Reports',
-      slug: 'reports',
-      description:
-        'Generate and download your detailed reports. Export data in multiple formats for analysis.',
-      component: <div>Reports</div>
+      title: 'Bracketing',
+      slug: 'bracketing',
+      description: 'Manage your event brackets and schedule.',
+      component: (
+        <Bracketing
+          preloadedStages={preloadedStages}
+          eventId={event._id}
+        />
+      )
+    },
+    {
+      title: 'Registration',
+      slug: 'registration',
+      description: 'Manage your event registration and participants.',
+      component: <div>Registration</div>
     },
     {
       title: 'Settings',
       slug: 'settings',
       description: 'Manage your event settings.',
       component: (
-        <EventSettings
+        <Settings
           event={event}
           slug={slug}
         />
@@ -115,8 +130,10 @@ export default function ManageEvent({ preloadedData, slug }: Props) {
           >
             <Card>
               <CardContent>
-                <CardTitle>{tab.title}</CardTitle>
-                <CardDescription>{tab.description}</CardDescription>
+                <div className={'mb-4'}>
+                  <CardTitle className={'text-lg'}>{tab.title}</CardTitle>
+                  <CardDescription>{tab.description}</CardDescription>
+                </div>
                 {tab.component}
               </CardContent>
             </Card>
