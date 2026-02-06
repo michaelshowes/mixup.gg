@@ -10,16 +10,28 @@ export const current = query({
   }
 });
 
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query('users').collect();
+  }
+});
+
 export const upsertFromClerk = internalMutation({
   args: { data: v.any() as Validator<UserJSON> }, // no runtime validation, trust Clerk
   async handler(ctx, { data }) {
+    const profileImageUrl = data.public_metadata?.image_url as
+      | string
+      | undefined;
+
     const userAttributes = {
       firstName: data.first_name ?? '',
       lastName: data.last_name ?? '',
       fullName: `${data.first_name} ${data.last_name}`,
       externalId: data.id,
       email: data.email_addresses[0].email_address,
-      imageUrl: data.image_url ? data.image_url : undefined
+      imageUrl: profileImageUrl ? profileImageUrl : data.image_url,
+      gamertag: data.public_metadata?.gamertag as string | undefined
     };
 
     const user = await userByExternalId(ctx, data.id);

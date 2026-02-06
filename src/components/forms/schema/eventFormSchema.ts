@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const eventFormSchema = z.object({
-  name: z.string().optional(),
+  name: z.string().min(1, 'Name is required'),
   game: z.number('You must select a game').min(1, 'Game is required'),
   eventPlatforms: z.array(
     z

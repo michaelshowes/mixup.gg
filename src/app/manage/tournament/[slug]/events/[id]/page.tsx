@@ -12,13 +12,22 @@ export default async function TournamentEventPage({
 }) {
   const { slug, id } = await params;
   const event = await preloadQuery(api.events.getEventById, { id });
+  const game = await preloadQuery(api.games.getById, {
+    // @ts-expect-error - event is a string
+    id: event?._valueJSON.game
+  });
+  const entrants = await preloadQuery(api.entrants.getByEvent, { eventId: id });
   const stages = await preloadQuery(api.stages.getByEvent, { eventId: id });
+
+  console.log(game);
 
   return (
     <div>
       <ManageEvent
         preloadedEvent={event}
         preloadedStages={stages}
+        preloadedEntrants={entrants}
+        preloadedGame={game}
         slug={slug}
       />
     </div>

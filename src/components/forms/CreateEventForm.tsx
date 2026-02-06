@@ -109,6 +109,9 @@ export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor='game'>Game</FieldLabel>
+                <FieldDescription className={'text-xs'}>
+                  The game the event will be played on.
+                </FieldDescription>
                 <Combobox
                   value={field.value ?? null}
                   onValueChange={(value) => {
@@ -317,8 +320,7 @@ export function CreateEventForm({ tournamentId, slug }: CreateEventFormProps) {
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor='name'>Event Name</FieldLabel>
               <FieldDescription className={'text-xs'}>
-                The name of the event. If left blank, the game name will be
-                used.
+                The name of the event.
               </FieldDescription>
               <Input
                 {...field}

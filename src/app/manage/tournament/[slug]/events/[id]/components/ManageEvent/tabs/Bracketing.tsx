@@ -21,8 +21,8 @@ import { Doc, Id } from '@/convex/_generated/dataModel';
 function StageCard({ stage }: { stage: Doc<'stages'> }) {
   return (
     <div className={'border border-gray-200 bg-gray-100 p-2'}>
-      <h3>{stage.name}</h3>
-      <p>{stage.format}</p>
+      <h3 className={'text-lg font-semibold'}>{stage.name}</h3>
+      <p className={'text-sm text-gray-600'}>{stage.format}</p>
     </div>
   );
 }

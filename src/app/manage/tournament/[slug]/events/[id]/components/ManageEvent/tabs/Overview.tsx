@@ -111,7 +111,6 @@ export default function Overview({ event }: { event: Doc<'events'> }) {
                     id='entrantCap'
                     name={name}
                     type='number'
-                    min={2}
                     placeholder='8'
                     aria-invalid={fieldState.invalid}
                     value={String(field.value ?? '')}
