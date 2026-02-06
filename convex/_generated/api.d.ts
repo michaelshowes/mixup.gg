@@ -14,6 +14,7 @@ import type * as games from "../games.js";
 import type * as groups from "../groups.js";
 import type * as http from "../http.js";
 import type * as platforms from "../platforms.js";
+import type * as progressions from "../progressions.js";
 import type * as schema_entrantSchema from "../schema/entrantSchema.js";
 import type * as schema_eventsSchema from "../schema/eventsSchema.js";
 import type * as schema_gameCoversSchema from "../schema/gameCoversSchema.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   groups: typeof groups;
   http: typeof http;
   platforms: typeof platforms;
+  progressions: typeof progressions;
   "schema/entrantSchema": typeof schema_entrantSchema;
   "schema/eventsSchema": typeof schema_eventsSchema;
   "schema/gameCoversSchema": typeof schema_gameCoversSchema;

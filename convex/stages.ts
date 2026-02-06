@@ -13,11 +13,18 @@ export const create = mutation({
     const poolCount = args.poolCount ?? 1;
 
     try {
+      const existingStages = await ctx.db
+        .query('stages')
+        .withIndex('by_event', (q) => q.eq('eventId', args.eventId))
+        .collect();
+
+      const order = existingStages.length;
+
       const stageId = await ctx.db.insert('stages', {
         name: args.name,
         eventId: args.eventId,
         format: args.format,
-        order: 0,
+        order,
         settings: {
           poolCount
         }
@@ -30,6 +37,22 @@ export const create = mutation({
           order: i,
           status: 'pending'
         });
+      }
+
+      // Auto-create progression from previous stage if one exists
+      if (order > 0) {
+        const previousStage = existingStages.find((s) => s.order === order - 1);
+        if (previousStage) {
+          await ctx.db.insert('progressions', {
+            eventId: args.eventId,
+            fromStageId: previousStage._id,
+            toStageId: stageId,
+            rules: {
+              qualifiersPerGroup: 1,
+              seeding: 'sequential'
+            }
+          });
+        }
       }
 
       return {
@@ -112,6 +135,10 @@ export const updatePoolCount = mutation({
 export const remove = mutation({
   args: { id: v.id('stages') },
   handler: async (ctx, args) => {
+    const stage = await ctx.db.get(args.id);
+    if (!stage) throw new ConvexError('Stage not found');
+
+    // Delete groups belonging to this stage
     const groups = await ctx.db
       .query('groups')
       .withIndex('by_stage', (q) => q.eq('stageId', args.id))
@@ -119,6 +146,57 @@ export const remove = mutation({
 
     await Promise.all(groups.map((group) => ctx.db.delete(group._id)));
 
-    return await ctx.db.delete(args.id);
+    // Find progressions involving this stage
+    const fromProgressions = await ctx.db
+      .query('progressions')
+      .withIndex('by_fromStage', (q) => q.eq('fromStageId', args.id))
+      .collect();
+
+    const toProgressions = await ctx.db
+      .query('progressions')
+      .withIndex('by_toStage', (q) => q.eq('toStageId', args.id))
+      .collect();
+
+    // If this is a middle stage (has both incoming and outgoing), re-link
+    if (toProgressions.length === 1 && fromProgressions.length === 1) {
+      const incoming = toProgressions[0];
+      const outgoing = fromProgressions[0];
+
+      await ctx.db.insert('progressions', {
+        eventId: stage.eventId,
+        fromStageId: incoming.fromStageId,
+        toStageId: outgoing.toStageId,
+        rules: incoming.rules
+      });
+    }
+
+    // Delete all progressions involving this stage
+    await Promise.all([
+      ...fromProgressions.map((p) => ctx.db.delete(p._id)),
+      ...toProgressions.map((p) => ctx.db.delete(p._id))
+    ]);
+
+    // Delete the stage
+    await ctx.db.delete(args.id);
+
+    // Reindex order values for remaining stages
+    const remainingStages = await ctx.db
+      .query('stages')
+      .withIndex('by_event', (q) => q.eq('eventId', stage.eventId))
+      .order('asc')
+      .collect();
+
+    // Sort by current order to maintain relative ordering
+    remainingStages.sort((a, b) => a.order - b.order);
+
+    await Promise.all(
+      remainingStages.map((s, i) => {
+        if (s.order !== i) {
+          return ctx.db.patch(s._id, { order: i });
+        }
+      })
+    );
+
+    return { success: true, message: 'Stage deleted' };
   }
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 
 import {
   Preloaded,
@@ -8,7 +8,13 @@ import {
   usePreloadedQuery,
   useQuery
 } from 'convex/react';
-import { MinusIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import {
+  ArrowDownIcon,
+  MinusIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon
+} from 'lucide-react';
 
 import CreateStageForm from '@/components/forms/CreateStageForm';
 import {
@@ -31,6 +37,13 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { api } from '@/convex/_generated/api';
 import { Doc, Id } from '@/convex/_generated/dataModel';
 import { cn } from '@/lib/utils';
@@ -158,8 +171,9 @@ function DeleteStageButton({ stageId }: { stageId: Id<'stages'> }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Stage</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete this stage and all its pools. This
-            action cannot be undone.
+            This will permanently delete this stage, its pools, and any
+            progressions linked to it. If this is a middle stage, adjacent stages
+            will be re-linked automatically.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -173,6 +187,91 @@ function DeleteStageButton({ stageId }: { stageId: Id<'stages'> }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function ProgressionConnector({
+  progression
+}: {
+  progression: Doc<'progressions'>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const updateProgression = useMutation(api.progressions.update);
+
+  const { qualifiersPerGroup, seeding } = progression.rules;
+
+  async function handleQualifiersChange(delta: number) {
+    const newCount = qualifiersPerGroup + delta;
+    if (newCount < 1) return;
+    await updateProgression({ id: progression._id, qualifiersPerGroup: newCount });
+  }
+
+  async function handleSeedingChange(value: string) {
+    await updateProgression({ id: progression._id, seeding: value });
+  }
+
+  return (
+    <div className='flex flex-col items-center gap-1 py-2'>
+      <ArrowDownIcon className='size-5 text-gray-400' />
+      {editing ? (
+        <div className='flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2'>
+          <div className='flex items-center gap-2'>
+            <span className='text-sm text-gray-500'>Top</span>
+            <div className='flex items-center gap-1'>
+              <Button
+                variant='outline'
+                size='icon'
+                className='size-7'
+                onClick={() => handleQualifiersChange(-1)}
+                disabled={qualifiersPerGroup <= 1}
+              >
+                <MinusIcon className='size-3' />
+              </Button>
+              <span className='w-8 text-center text-sm font-medium'>
+                {qualifiersPerGroup}
+              </span>
+              <Button
+                variant='outline'
+                size='icon'
+                className='size-7'
+                onClick={() => handleQualifiersChange(1)}
+              >
+                <PlusIcon className='size-3' />
+              </Button>
+            </div>
+            <span className='text-sm text-gray-500'>per group</span>
+          </div>
+          <Select
+            value={seeding}
+            onValueChange={handleSeedingChange}
+          >
+            <SelectTrigger size='sm'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='sequential'>Sequential</SelectItem>
+              <SelectItem value='cross'>Cross</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => setEditing(false)}
+          >
+            Done
+          </Button>
+        </div>
+      ) : (
+        <button
+          className='group flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-sm text-gray-500 transition-colors hover:border-gray-400 hover:text-gray-700'
+          onClick={() => setEditing(true)}
+        >
+          Top {qualifiersPerGroup} from each group advance ({seeding} seeding)
+          <PencilIcon className='size-3 opacity-0 transition-opacity group-hover:opacity-100' />
+        </button>
+      )}
+      <ArrowDownIcon className='size-5 text-gray-400' />
+    </div>
   );
 }
 
@@ -244,18 +343,38 @@ export default function Bracketing({
   const [open, setOpen] = useState(false);
   const stages = usePreloadedQuery(preloadedStages);
   const entrants = usePreloadedQuery(preloadedEntrants) as Entrant[];
+  const progressions = useQuery(api.progressions.getByEvent, { eventId });
+
+  function getProgressionBetween(
+    fromStageId: Id<'stages'>,
+    toStageId: Id<'stages'>
+  ) {
+    return progressions?.find(
+      (p) => p.fromStageId === fromStageId && p.toStageId === toStageId
+    );
+  }
 
   return (
     <div>
       <h4 className='mb-2 font-semibold'>Stages</h4>
       <div className='space-y-2'>
-        <div className='flex flex-col gap-2'>
-          {stages?.map((stage) => (
-            <StageCard
-              key={stage._id}
-              stage={stage}
-              entrants={entrants}
-            />
+        <div className='flex flex-col'>
+          {stages?.map((stage, index) => (
+            <Fragment key={stage._id}>
+              {index > 0 && stages[index - 1] && (() => {
+                const progression = getProgressionBetween(
+                  stages[index - 1]._id,
+                  stage._id
+                );
+                return progression ? (
+                  <ProgressionConnector progression={progression} />
+                ) : null;
+              })()}
+              <StageCard
+                stage={stage}
+                entrants={stage.order === 0 ? entrants : []}
+              />
+            </Fragment>
           ))}
         </div>
         <Dialog
