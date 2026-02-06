@@ -6,4 +6,4 @@ export const groups = defineTable({
   stageId: v.id('stages'),
   order: v.number(),
   status: v.string()
-});
+}).index('by_stage', ['stageId']);

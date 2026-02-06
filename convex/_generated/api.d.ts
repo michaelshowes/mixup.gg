@@ -11,6 +11,7 @@
 import type * as entrants from "../entrants.js";
 import type * as events from "../events.js";
 import type * as games from "../games.js";
+import type * as groups from "../groups.js";
 import type * as http from "../http.js";
 import type * as platforms from "../platforms.js";
 import type * as schema_entrantSchema from "../schema/entrantSchema.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   entrants: typeof entrants;
   events: typeof events;
   games: typeof games;
+  groups: typeof groups;
   http: typeof http;
   platforms: typeof platforms;
   "schema/entrantSchema": typeof schema_entrantSchema;

@@ -18,8 +18,7 @@ export default async function TournamentEventPage({
   });
   const entrants = await preloadQuery(api.entrants.getByEvent, { eventId: id });
   const stages = await preloadQuery(api.stages.getByEvent, { eventId: id });
-
-  console.log(game);
+  const platforms = await preloadQuery(api.platforms.list);
 
   return (
     <div>
@@ -28,6 +27,7 @@ export default async function TournamentEventPage({
         preloadedStages={stages}
         preloadedEntrants={entrants}
         preloadedGame={game}
+        preloadedPlatforms={platforms}
         slug={slug}
       />
     </div>

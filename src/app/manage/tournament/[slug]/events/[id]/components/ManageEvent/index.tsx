@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { Preloaded, usePreloadedQuery, useQuery } from 'convex/react';
+import { Preloaded, usePreloadedQuery } from 'convex/react';
 
 import {
   Card,
@@ -27,24 +27,74 @@ type Props = {
   preloadedStages: Preloaded<typeof api.stages.getByEvent>;
   preloadedEntrants: Preloaded<typeof api.entrants.getByEvent>;
   preloadedGame: Preloaded<typeof api.games.getById>;
+  preloadedPlatforms: Preloaded<typeof api.platforms.list>;
   slug: string;
 };
 
 const validTabs = ['overview', 'entrants', 'seeding', 'bracketing', 'settings'];
+
+function EventHeader({
+  event,
+  game,
+  entrants,
+  platforms
+}: {
+  event: Doc<'events'>;
+  game: Doc<'games'> | null;
+  entrants: Doc<'entrants'>[];
+  platforms: Doc<'platforms'>[];
+}) {
+  return (
+    <div
+      className={'gap-2 border border-gray-200 bg-white max-lg:flex lg:mt-11'}
+    >
+      {game ? (
+        <Image
+          src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${game?.cover?.imageId}.jpg`}
+          alt={event?.name ?? 'Event Image'}
+          width={game?.cover?.width ?? 100}
+          height={game?.cover?.height ?? 100}
+          unoptimized
+          className={'max-lg:max-w-[100px]'}
+        />
+      ) : (
+        <Skeleton className={'aspect-9/12 w-[200px]'} />
+      )}
+      <div className={'px-4 py-2'}>
+        <h2 className='font-bold lg:text-xl'>{event?.name}</h2>
+        <p className={'mb-2 text-sm text-gray-500'}>{game?.name}</p>
+        <div className={'flex gap-2'}>
+          {event.eventPlatforms.map((platformId) => (
+            <span
+              key={platformId}
+              className={'rounded-full bg-gray-200 px-2 text-xs font-medium'}
+            >
+              {platforms?.find((p) => p.id === platformId)?.name ?? 'Unknown'}
+            </span>
+          ))}
+        </div>
+        <div>
+          <p className={'text-sm font-semibold'}>
+            Entries: {entrants.length}/{event.entrantCap}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ManageEvent({
   preloadedEvent,
   preloadedStages,
   preloadedEntrants,
   preloadedGame,
+  preloadedPlatforms,
   slug
 }: Props) {
   const event = usePreloadedQuery(preloadedEvent) as Doc<'events'> | null;
-  const stages = usePreloadedQuery(preloadedStages) as Doc<'stages'>[];
   const game = usePreloadedQuery(preloadedGame) as Doc<'games'> | null;
   const entrants = usePreloadedQuery(preloadedEntrants) as Doc<'entrants'>[];
-  // const game = useQuery(api.games.getById, event ? { id: event.game } : 'skip');
-  const platforms = useQuery(api.platforms.list);
+  const platforms = usePreloadedQuery(preloadedPlatforms) as Doc<'platforms'>[];
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -86,6 +136,7 @@ export default function ManageEvent({
       component: (
         <Bracketing
           preloadedStages={preloadedStages}
+          preloadedEntrants={preloadedEntrants}
           eventId={event._id}
         />
       )
@@ -107,49 +158,15 @@ export default function ManageEvent({
     <div className={'mx-auto max-w-[1600px] space-y-10'}>
       <div
         className={
-          'grid min-h-[calc(100%-90px)] items-start gap-4 md:grid-cols-[200px_1fr] lg:grid-cols-[260px_1fr]'
+          'grid min-h-[calc(100%-90px)] items-start gap-4 lg:grid-cols-[260px_1fr]'
         }
       >
-        <div
-          className={
-            'gap-2 border border-gray-200 bg-white max-md:flex md:mt-11'
-          }
-        >
-          {game ? (
-            <Image
-              src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${game?.cover?.imageId}.jpg`}
-              alt={event?.name ?? 'Event Image'}
-              width={game?.cover?.width ?? 100}
-              height={game?.cover?.height ?? 100}
-              unoptimized
-              className={'max-md:max-w-[100px]'}
-            />
-          ) : (
-            <Skeleton className={'aspect-9/12 w-[200px]'} />
-          )}
-          <div className={'px-4 py-2'}>
-            <h2 className='font-bold lg:text-xl'>{event?.name}</h2>
-            <p className={'mb-2 text-sm text-gray-500'}>{game?.name}</p>
-            <div className={'flex gap-2'}>
-              {event.eventPlatforms.map((platformId) => (
-                <span
-                  key={platformId}
-                  className={
-                    'rounded-full bg-gray-200 px-2 text-xs font-medium'
-                  }
-                >
-                  {platforms?.find((p) => p.id === platformId)?.name ??
-                    'Unknown'}
-                </span>
-              ))}
-            </div>
-            <div>
-              <p className={'text-sm font-semibold'}>
-                Entries: {entrants.length}/{event.entrantCap}
-              </p>
-            </div>
-          </div>
-        </div>
+        <EventHeader
+          event={event}
+          game={game}
+          entrants={entrants}
+          platforms={platforms}
+        />
         <div>
           <Tabs
             value={activeTab}

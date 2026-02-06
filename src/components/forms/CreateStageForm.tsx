@@ -38,7 +38,8 @@ export default function CreateStageForm({
     resolver: zodResolver(stageFormSchema),
     defaultValues: {
       name: '',
-      format: ''
+      format: '',
+      poolCount: 1
     }
   });
 
@@ -52,6 +53,7 @@ export default function CreateStageForm({
     await createStage({
       name: data.name,
       format: data.format,
+      poolCount: data.poolCount,
       eventId
     });
     form.reset();
@@ -103,6 +105,24 @@ export default function CreateStageForm({
                   </SelectGroup>
                 </SelectContent>
               </Select>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+        <Controller
+          name='poolCount'
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor='poolCount'>Pool Count</FieldLabel>
+              <Input
+                {...field}
+                id='poolCount'
+                type='number'
+                min={1}
+                max={64}
+                aria-invalid={fieldState.invalid}
+              />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
